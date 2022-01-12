@@ -7,8 +7,9 @@ import { SharedService } from './shared.service';
 import { SignInComponent } from './sign-in/sign-in.component';
 import { SignUpComponent } from './sign-up/sign-up.component';
 import { ChatScreenComponent } from './chat-screen/chat-screen.component';
-import {HttpClientModule} from '@angular/common/http';
+import { HttpClientModule} from '@angular/common/http';
 import { FormsModule,ReactiveFormsModule } from '@angular/forms';
+import { JwtHelperService, JWT_OPTIONS  } from '@auth0/angular-jwt';
 
 @NgModule({
   declarations: [
@@ -24,7 +25,7 @@ import { FormsModule,ReactiveFormsModule } from '@angular/forms';
     FormsModule,
     ReactiveFormsModule
   ],
-  providers: [SharedService],
+  providers: [SharedService,{ provide: JWT_OPTIONS, useValue: JWT_OPTIONS },JwtHelperService],
   bootstrap: [AppComponent]
 })
 export class AppModule { }
