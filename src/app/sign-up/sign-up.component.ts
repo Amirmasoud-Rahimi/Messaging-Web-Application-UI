@@ -32,7 +32,7 @@ export class SignUpComponent implements OnInit {
       },
       (error) => {
         console.error(error);
-        alert("Sign Up Failed")
+        this.service.showErrorMessage(String(error.error.errors.Password[0]))//fix
         //throw error;   //You can also throw the error to a global error handler
       }
     )

@@ -1,8 +1,12 @@
 import { HttpHeaders } from '@angular/common/http';
 import { Component, OnInit, ViewChild, ElementRef, AfterViewInit } from '@angular/core';
 import { SharedService } from '../shared.service';
+import { SignInComponent } from '../sign-in/sign-in.component';
 import * as jQuery from 'jquery';
 import { Router } from '@angular/router';
+import { HubConnection, HubConnectionBuilder } from '@microsoft/signalr';
+import * as signalR from '@microsoft/signalr';
+import { Message } from '@angular/compiler/src/i18n/i18n_ast';
 
 let $: any = jQuery;//?
 
@@ -13,7 +17,8 @@ let $: any = jQuery;//?
 })
 export class ChatScreenComponent implements OnInit {
   element: any;
- 
+  private hubConnection!: HubConnection;
+  public onlineUsers:any=[];
   constructor(private service:SharedService,private router:Router) { }
 
   usersList:any=[];
@@ -25,12 +30,30 @@ export class ChatScreenComponent implements OnInit {
   text!:String;
   userId!:any;
   contactId:any;
-
+  msgs: Message[] = [];
+  
   ngOnInit(): void {
     this.currentUser=this.service.getCurrentUserFromLocalStorage();
     this.getContactsList();
+      //-----hub 
+      this.hubConnection = this.service.createHubConnection();
+     this.service.startHubConnection(this.hubConnection);
+
+    this.hubConnection.on('MessageReceived', (message:any) => {
+      this.messagesList.push(message);
+    });
+    this.hubConnection.on('UserConnected', (userName:any) => {
+      this.onlineUsers.push(userName);
+    });
+    console.log(this.onlineUsers);
   }
 
+  /*public sendMessageToHub(): void {
+    this.hubConnection
+    .invoke('sendToAll', this.nick, this.message)
+    .catch(err => console.log(err));
+  }*/
+ 
   getContactsList(): void{
     var currentUser=this.service.getCurrentUserFromLocalStorage();
     let httpOptions=this.service.getJwtHttpOption();
@@ -38,7 +61,7 @@ export class ChatScreenComponent implements OnInit {
       {
           next:(response)=> {
             this.usersList=response
-            this.usersList=this.usersList.filter((user: { Id: any; })=>user.Id!=currentUser.Id);
+            this.usersList=this.usersList.filter((user: { id: any; })=>user.id!=currentUser.id);
           },
           error:(e) =>console.log(e),
           complete: () => console.log('complete')
@@ -49,7 +72,7 @@ export class ChatScreenComponent implements OnInit {
   getMessagesList(contactId:any):void{
     var currentUser=this.service.getCurrentUserFromLocalStorage();
     let httpOptions=this.service.getJwtHttpOption();
-    this.service.getAllMessages(currentUser.Id,contactId,httpOptions).subscribe(
+    this.service.getAllMessages(currentUser.id,contactId,httpOptions).subscribe(
       {
           next:(response)=> this.messagesList=response,
           error:(e) =>console.log(e),
@@ -72,7 +95,7 @@ export class ChatScreenComponent implements OnInit {
     var currentUser=this.service.getCurrentUserFromLocalStorage();
     let httpOptions=this.service.getJwtHttpOption();
     var message={
-      SenderId:currentUser.Id,
+      SenderId:currentUser.id,
       ReceiverId: this.contactId,
       MessageContent:this.text
     }
@@ -81,6 +104,7 @@ export class ChatScreenComponent implements OnInit {
         error:(e) =>console.log(e),
         complete: () => {
           console.log('complete');
+          this.text='';
           this.getMessagesList(this.contactId);
         }
       }
